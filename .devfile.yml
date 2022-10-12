@@ -1,31 +1,34 @@
-schemaVersion: 2.1.0
+apiVersion: apps/v1
+kind: Deployment
 metadata:
-  name: mydevfile
-projects:
-  - name: my-maven-project
-    clonePath: maven/src/github.com/thilakshanaa-a/devfile
-    git:
-      remotes:
-        origin: "https://github.com/thilakshanaa-a/devfile.git"
-components:
-  - name: python
-    container:
-      image: eclipse/ubuntu_python:latest 
-      mountSources: true
-	  memoryLimit: 512Mi
-      command: ['sleep', 'infinity']
-	  type: dockerimage
-commands:
-  - id: package
-    exec:
-      component: python
-      commandLine: "mvn package"
-      group:
-        kind: build
-  - id: install
-    exec:
-      component: python
-      commandLine: "mvn install"
-      group:
-        kind: build
-        isDefault: true
+  name: winedeploy
+  labels:
+    app: web
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: web
+  template:
+    metadata:
+      labels:
+        app: web
+    spec:
+      containers:
+        - name: wineimage
+          image: eclipse/che:5.5.0
+          command: ["/bin/sh"]
+          args: ["docker run -it -e CHE_OAUTH_GITHUB_CLIENTID=d331ebafcaca1b44a01f -e CHE_OAUTH_GITHUB_CLIENTSECRET=e325a0fa310660bd497c96035a567ad2cad0725e -e CHE_OAUTH_GITHUB_REDIRECTURIS=http://127.0.0.1:8080/wsmaster/api/oauth/callback -eCHE_DOCKER_IP_EXTERNAL=127.0.0.1 -v /data:/data -v /var/run/docker.sock:/var/run/docker.sock eclipse/che:5.5.0 start"]
+          ports:
+            - containerPort: 8080
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: redwine4-service
+spec:
+  type: LoadBalancer
+  ports:
+  - port: 8080
+  selector:
+    app: web
